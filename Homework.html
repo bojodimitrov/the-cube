@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>The cube</title>
+
+	<script src="webgl-fmi.js"></script>
+	<script src="shaders.js"></script>
+	<script src="manager.js"></script>
+	<script src="field.js"></script>
+	<script src="ball.js"></script>
+	<script src="Utils.js"></script>
+
+	<script>
+		function start() {
+			var canvas = document.getElementById("picasso");
+			canvas.addEventListener('webglcontextlost', function (event) {
+				event.preventDefault();
+			}, false);
+			canvas.addEventListener('webglcontextrestored', function () {
+				init();
+			}, false);
+
+
+			init(canvas);
+			drawFrame();
+		}
+
+		function init(canvas) {
+			gl = getContext("picasso");
+			glprog = getProgram(vShader, fShader);
+			getVariables();
+
+			gl.enable(gl.DEPTH_TEST);
+			gl.clearColor(0.1, 0.1, 0.1, 1);
+
+			// магически код за поддръжка на прозрачност на водата
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.SRC_ALPHA, gl.SRC_ONE_MINUS_ALPHA);
+			gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+
+			identity();
+			perspective(30, gl.canvas.width / gl.canvas.height, 1, 40000);
+			gl.uniform1i(uUseNormalMatrix, false);
+
+			gl.uniform3f(uAmbientColor, 0.3, 0.3, 0.3);
+			gl.uniform3f(uDiffuseColor, 1, 1, 1);
+			gl.uniform3f(uLightDir, 0, 0, -1);
+
+			lookAt([0, -0.1, 400], [0, 0, 0], [0, 0, 1]);
+
+			manager = new Manager(canvas);
+			manager.loadEvents();
+			// създаване на случаен терен
+			//terrain = new Terrain([0, 0, 0], 1, [120, 120], 5);
+			//terrain.init();
+			//mountain = new Mountain([120, 0, 0], 1, [120, 120], 5);
+			//lake = new Lake([0, 120, 0], 1, [120, 120], 5);
+			//tree = new Deciduous([0, 100, 10], 0.5, 4);
+
+		}
+
+		var time = now();
+
+		function now() {
+			return (new Date()).getTime() / 1000;
+		}
+
+		function drawFrame() {
+			time = now();
+			gl.clear(gl.COLOR_BUFFER_BIT + gl.DEPTH_BUFFER_BIT);
+
+			//lookAt([250 * cos(time / 3), 450 * sin(time / 3), 200 + 100 * sin(time / 2)], [0, 0, 0], [0, 0, 1]);
+			//gl.depthMask(true);
+			manager.rotateView()
+
+			//gl.uniform1f(uAlpha,1); // прозрачност
+			// рисуване на терена
+			gl.depthMask(true);
+			gl.uniform1f(uAlpha, 1); // прозрачност
+
+			manager.draw();
+			manager.checkTarget();
+			// рисуване на водата
+			gl.depthMask(false);
+			gl.uniform1f(uAlpha, 0.7); // прозрачност
+
+			requestAnimationFrame(drawFrame);
+		}
+	</script>
+</head>
+
+<body onload="start()">
+	<h2>The Cube</h2>
+
+	<noscript>
+		Искаме JavaScript, но няма!
+	</noscript>
+
+	<canvas id="picasso" width="1200" height="800" style="border: solid;">
+		Искаме canvas, но няма!
+	</canvas>
+</body>
